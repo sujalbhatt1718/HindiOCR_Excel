@@ -1,3 +1,16 @@
+---
+title: HindiOCRExcel
+emoji: 📊
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_port: 8000
+pinned: false
+license: mit
+---
+
+<!-- The YAML block above configures the Hugging Face Space (Docker SDK). -->
+
 # HindiOCRExcel
 
 Convert images and PDF documents containing **tabular data** into editable,
@@ -240,6 +253,26 @@ path to `/api/health`, and add the env vars from `render.yaml`.
 
 Railway/other PaaS: use the Dockerfile, or set the start command to
 `cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+
+### Deploy to Hugging Face Spaces (free)
+
+The free **CPU Basic** Space has 16 GB RAM — enough for PaddleOCR. The YAML
+frontmatter at the top of this README (`sdk: docker`, `app_port: 8000`)
+configures the Space; it builds this repo's `Dockerfile` directly.
+
+1. Create a **Docker** Space at <https://huggingface.co/new-space> (SDK: Docker).
+2. Push this code to the Space's git remote:
+   ```bash
+   git remote add space https://huggingface.co/spaces/<user>/<space-name>
+   git push space HEAD:main
+   ```
+   (Authenticate with an HF access token that has **write** scope —
+   <https://huggingface.co/settings/tokens>.)
+3. The Space builds the image and boots. First `/process` downloads the OCR
+   models (~15 MB). The app is served at the Space URL.
+
+Storage on Spaces is ephemeral; models re-download after a rebuild/restart
+unless you attach persistent storage.
 
 ---
 
