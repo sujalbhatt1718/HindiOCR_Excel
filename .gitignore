@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Runtime data
+backend/uploads/*
+backend/temp/*
+backend/logs/*
+!backend/uploads/.gitkeep
+!backend/temp/.gitkeep
+!backend/logs/.gitkeep
+
+# OCR model cache
+backend/models/
+.paddleocr/
+
+# Environment / secrets
+.env
+backend/.env
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
