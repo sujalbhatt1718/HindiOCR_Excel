@@ -1,0 +1,30 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Deploys HindiOCRExcel as a Docker web service (PaddleOCR/OpenCV need system libs).
+services:
+  - type: web
+    name: hindiocrexcel
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # PaddleOCR + paddlepaddle are memory-hungry; free/starter (512MB) can OOM.
+    # "standard" is 2GB RAM. Adjust to your budget.
+    plan: standard
+    region: oregon
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: OCR_LANG
+        value: hi
+      - key: MAX_UPLOAD_SIZE_MB
+        value: "25"
+      - key: MAX_PDF_PAGES
+        value: "30"
+      - key: CORS_ORIGINS
+        value: '["*"]'
+    # Persist downloaded OCR models (~15MB) across deploys/restarts so they
+    # are not re-downloaded on every cold start. Requires a paid instance and
+    # pins the service to a single instance. Remove this block to skip it.
+    disk:
+      name: ocr-models
+      mountPath: /app/backend/models
+      sizeGB: 1

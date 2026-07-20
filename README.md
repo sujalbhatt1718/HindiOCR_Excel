@@ -210,10 +210,35 @@ The app is a standard ASGI application (`app.main:app`). Deploy on **Render**,
   ```bash
   uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
   ```
-- Put it behind Nginx/Caddy for TLS. Persist `~/.paddleocr` to avoid
-  re-downloading models on every deploy.
+- Put it behind Nginx/Caddy for TLS. Persist `backend/models` (the
+  `OCR_MODEL_DIR`) to avoid re-downloading models on every deploy.
 
-Render/Railway: set the start command to
+### Deploy to Render
+
+A `render.yaml` Blueprint is included (Docker web service — required because
+PaddleOCR/OpenCV need system libraries).
+
+1. Push this repo to GitHub (already done).
+2. In Render: **New → Blueprint**, pick this repo. Render reads `render.yaml`
+   and provisions a Docker web service with health check `/api/health`.
+3. First build takes a few minutes (installs system libs + Python deps). The
+   first `/process` request downloads the PaddleOCR models (~15 MB).
+
+Notes:
+- **Memory:** `paddlepaddle` is heavy — the free/starter (512 MB) instance can
+  OOM. The blueprint defaults to `plan: standard` (2 GB); lower it at your own
+  risk.
+- **Model cache:** the blueprint mounts a 1 GB disk at
+  `/app/backend/models` so models survive restarts. Disks require a paid
+  instance and pin the service to one instance — remove the `disk:` block if you
+  don't want that (models will simply re-download on cold start).
+- The container binds to Render's injected `$PORT` automatically.
+
+Prefer configuring manually instead of the Blueprint? Create a **Web Service**,
+choose **Docker**, leave the Dockerfile path as `./Dockerfile`, set health check
+path to `/api/health`, and add the env vars from `render.yaml`.
+
+Railway/other PaaS: use the Dockerfile, or set the start command to
 `cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
 
 ---
