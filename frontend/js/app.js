@@ -173,7 +173,8 @@
         const res = await HOE.api.process(fileId);
         HOE.table.load(res.table);
         dataTable.classList.remove("d-none");
-        toolbar.classList.add("show");
+        toolbar.classList.remove("d-none");
+        toolbar.classList.add("d-flex");
         exportBtn.disabled = false;
         confBadge.classList.remove("d-none");
         timeBadge.classList.remove("d-none");
