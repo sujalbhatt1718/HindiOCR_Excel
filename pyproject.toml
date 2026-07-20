@@ -1,0 +1,34 @@
+[project]
+name = "hindiocrexcel"
+version = "1.0.0"
+description = "Convert Hindi/English tabular images and PDFs into editable Excel files."
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+extend-exclude = ["venv", ".venv", "backend/uploads", "backend/temp"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4"]
+ignore = ["B008"]  # FastAPI uses function calls (Depends/File) in defaults
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_unused_ignores = false
+warn_redundant_casts = true
+no_implicit_optional = true
+files = ["backend/app"]
+explicit_package_bases = true
+mypy_path = "backend"
+
+[tool.pytest.ini_options]
+pythonpath = ["backend"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+filterwarnings = ["ignore::DeprecationWarning"]
