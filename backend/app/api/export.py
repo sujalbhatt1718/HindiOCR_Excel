@@ -13,6 +13,7 @@ from app.services.excel_service import ExcelService
 from app.utils.exceptions import ExcelExportError
 from app.utils.helpers import sanitize_filename
 from app.utils.logger import logger
+from app.utils.numeral_converter import convert_table
 
 router = APIRouter(tags=["export"])
 
@@ -33,8 +34,11 @@ async def export_excel(
     if not payload.table:
         raise ExcelExportError("The table is empty; nothing to export.")
 
+    # Defensive: ensure any Devanagari digits still present in the edited table
+    # are converted to ASCII so the workbook stores real numeric values.
+    table = convert_table(payload.table)
     data = excel.build_workbook(
-        payload.table, sheet_name=payload.sheet_name, header=payload.header
+        table, sheet_name=payload.sheet_name, header=payload.header
     )
     base = sanitize_filename(payload.filename or "hindi_ocr_export")
     if base.lower().endswith(".xlsx"):

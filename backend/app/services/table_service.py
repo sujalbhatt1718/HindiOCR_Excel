@@ -96,10 +96,16 @@ class TableService:
         h_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (h_size, 1))
         h_lines = cv2.erode(binary, h_kernel, iterations=1)
         h_lines = cv2.dilate(h_lines, h_kernel, iterations=1)
+        # Bridge broken/faint horizontal borders so gapped rulings still count.
+        h_bridge = cv2.getStructuringElement(cv2.MORPH_RECT, (h_size // 2, 1))
+        h_lines = cv2.morphologyEx(h_lines, cv2.MORPH_CLOSE, h_bridge)
 
         v_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, v_size))
         v_lines = cv2.erode(binary, v_kernel, iterations=1)
         v_lines = cv2.dilate(v_lines, v_kernel, iterations=1)
+        # Bridge broken/faint vertical borders.
+        v_bridge = cv2.getStructuringElement(cv2.MORPH_RECT, (1, v_size // 2))
+        v_lines = cv2.morphologyEx(v_lines, cv2.MORPH_CLOSE, v_bridge)
 
         return h_lines, v_lines
 

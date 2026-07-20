@@ -25,8 +25,10 @@ _MIN_COL_WIDTH = 8
 def _looks_numeric(value: str) -> bool:
     """Return True if ``value`` is a plain ASCII number safe to store as num.
 
-    Non-ASCII digits (e.g. Devanagari ०-९) are intentionally *not* treated as
-    numeric so Hindi numerals are preserved verbatim in the exported file.
+    Devanagari digits are converted to ASCII upstream (see
+    :mod:`app.utils.numeral_converter`), so by the time a cell reaches here a
+    numeric value is already ASCII. Mixed text (e.g. ``विद्यालय नं. 12``) and
+    non-numeric strings stay text.
     """
     v = value.strip().replace(",", "")
     if not v or not v.isascii():

@@ -77,3 +77,18 @@ def test_export_empty_table_errors(client):
     res = client.post("/api/export", json={"table": [], "filename": "x"})
     assert res.status_code == 500
     assert res.json()["error"] == "excel_export_failed"
+
+
+def test_export_converts_devanagari_numerals(client):
+    table = [["क्रम", "नाम", "राशि"], ["१", "राम", "१५००"], ["२", "John", "२३०"]]
+    res = client.post(
+        "/api/export",
+        json={"table": table, "filename": "num", "header": True},
+    )
+    assert res.status_code == 200
+    wb = openpyxl.load_workbook(io.BytesIO(res.content))
+    rows = list(wb.active.iter_rows(values_only=True))
+    # Header preserved; Devanagari digits become real numeric cells.
+    assert rows[0] == ("क्रम", "नाम", "राशि")
+    assert rows[1] == (1, "राम", 1500)
+    assert rows[2] == (2, "John", 230)

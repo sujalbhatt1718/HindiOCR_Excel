@@ -22,6 +22,7 @@ from app.services.table_service import TableService
 from app.utils.exceptions import CorruptedFileError, NoTableFoundError
 from app.utils.helpers import get_extension
 from app.utils.logger import logger
+from app.utils.numeral_converter import convert_table
 
 
 class DocumentService:
@@ -64,6 +65,9 @@ class DocumentService:
 
         for idx, image in enumerate(images, start=1):
             rows, conf = self.table.extract(image, lang)
+            # Normalise Hindi numerals to ASCII digits before the table is
+            # reconstructed, displayed or exported (Hindi words are preserved).
+            rows = convert_table(rows)
             n_rows = len(rows)
             n_cols = len(rows[0]) if rows else 0
             pages.append(

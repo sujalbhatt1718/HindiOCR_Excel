@@ -25,20 +25,27 @@ Built with **FastAPI + PaddleOCR + OpenCV**. No Tesseract.
 
 - **Upload** JPG / JPEG / PNG / PDF (drag & drop, browse, preview, progress bar,
   size & type validation).
+- **Image crop** (Cropper.js) — crop, zoom, rotate and reset the uploaded image
+  before OCR; only the selected region is sent to the backend.
+- **Hindi → English numerals** — Devanagari digits (`०१२३…`) are converted to
+  ASCII (`0123…`) via a Unicode mapping before table reconstruction, display and
+  export, while Hindi words (e.g. `राम`) are preserved (`१२३`→`123`,
+  `विद्यालय नं. १२`→`विद्यालय नं. 12`).
 - **PaddleOCR** engine — auto-downloads models, auto CPU fallback, angle/
   orientation classification, confidence scores. Hindi + English + numerals.
 - **Preprocessing pipeline** (OpenCV): resize, grayscale, denoise, Gaussian &
   median blur, CLAHE, adaptive threshold, morphology, sharpening, border &
   shadow removal, perspective correction, deskew.
-- **Table detection** — detects horizontal/vertical lines, builds a cell grid
-  and OCRs each cell individually; falls back to geometric layout clustering for
-  line-less tables. Preserves blank cells and structure.
+- **Table detection** — detects horizontal/vertical lines (with morphological
+  bridging of broken/faint borders), builds a cell grid and OCRs each cell
+  individually; falls back to geometric layout clustering for line-less tables.
+  Preserves blank cells and structure.
 - **Multi-page PDF** — every page rendered, processed and merged in order.
 - **Editable spreadsheet** — edit any cell, add/delete rows & columns, copy/
   paste (multi-cell), search, clear, undo/redo.
-- **Excel export** — Unicode-safe, numeric coercion (ASCII only, Hindi numerals
-  preserved), bold header, borders, wrapping, centre alignment, auto column
-  width, frozen first row.
+- **Excel export** — Unicode-safe, numeric coercion (Hindi numerals converted to
+  ASCII upstream so they store as real numbers), bold header, borders, wrapping,
+  centre alignment, auto column width, frozen first row.
 - **Production-ready** — typed, modular services, Pydantic models, Loguru
   logging, robust error handling, CORS, temp-file cleanup, Docker, tests.
 
@@ -49,8 +56,8 @@ Built with **FastAPI + PaddleOCR + OpenCV**. No Tesseract.
 | Backend   | Python 3.11, FastAPI, Uvicorn, Loguru, python-dotenv   |
 | OCR / CV  | PaddleOCR, OpenCV, NumPy, Pillow                        |
 | PDF       | PyMuPDF (fitz)                                          |
-| Excel     | Pandas, OpenPyXL                                        |
-| Frontend  | HTML5, CSS3, Bootstrap 5, Vanilla JS                    |
+| Excel     | OpenPyXL                                                |
+| Frontend  | HTML5, CSS3, Bootstrap 5, Vanilla JS, Cropper.js        |
 
 ---
 
@@ -66,12 +73,12 @@ HindiOCRExcel/
 │   │   ├── api/                 # upload, process, export, health, files
 │   │   ├── services/            # preprocessing, ocr, pdf, table, excel, document
 │   │   ├── models/schemas.py    # Pydantic request/response models
-│   │   └── utils/               # logger, helpers, exceptions
+│   │   └── utils/               # logger, helpers, exceptions, numeral_converter
 │   ├── uploads/  temp/  logs/   # runtime data (gitignored)
 ├── frontend/
 │   ├── index.html  workspace.html  about.html  404.html
 │   ├── css/style.css
-│   └── js/  (theme, api, upload, table, export, app)
+│   └── js/  (theme, api, upload, crop, table, export, app)
 ├── tests/                       # pytest suite
 ├── requirements.txt  requirements-dev.txt
 ├── Dockerfile  docker-compose.yml  docker-compose.dev.yml
@@ -87,7 +94,7 @@ Requires **Python 3.11+**. On Debian/Ubuntu install the OpenCV/PDF system libs:
 
 ```bash
 sudo apt-get update && sudo apt-get install -y \
-  libgl1 libglib2.0-0 libgomp1 poppler-utils fonts-lohit-deva
+  libgl1 libglib2.0-0 libgomp1 fonts-lohit-deva
 ```
 
 Then:
@@ -285,7 +292,7 @@ unless you attach persistent storage.
 | `ocr_model_load_failed` | Network blocked model download — pre-download models or mount them. |
 | Hindi text renders as boxes in the UI | Install a Devanagari font (`fonts-lohit-deva`) / use a modern browser. |
 | Poor accuracy | Use a higher-resolution scan, ensure the table is upright and well-lit. |
-| PDF fails to render | Ensure `poppler-utils` is installed; confirm the PDF isn't encrypted. |
+| PDF fails to render | PDFs are rendered by PyMuPDF; confirm the file isn't encrypted or corrupted. |
 | Out-of-memory on large PDFs | Lower `PDF_RENDER_DPI` or `MAX_PDF_PAGES`. |
 
 ---

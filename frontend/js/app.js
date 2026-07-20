@@ -60,11 +60,13 @@
 
     startBtn.addEventListener("click", async () => {
       if (!selected) return;
+      const toSend = await HOE.crop.cropImage(selected);
+      if (!toSend) return; // user cancelled the crop dialog
       startBtn.disabled = true;
       startBtn.innerHTML =
         '<span class="spinner-border spinner-border-sm"></span> Uploading…';
       try {
-        const meta = await HOE.upload.send(selected, progress);
+        const meta = await HOE.upload.send(toSend, progress);
         sessionStorage.setItem("hoe-file", JSON.stringify(meta));
         window.location.href = "/workspace";
       } catch (err) {
@@ -128,9 +130,11 @@
         HOE.toast(v.error, "danger");
         return;
       }
+      const toSend = await HOE.crop.cropImage(file);
+      if (!toSend) return; // user cancelled the crop dialog
       try {
         const meta = await HOE.upload.send(
-          file,
+          toSend,
           document.getElementById("uploadProgress")
         );
         loadDocument(meta);

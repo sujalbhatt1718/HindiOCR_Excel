@@ -6,12 +6,11 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# System libraries required by OpenCV, PaddleOCR and PDF rendering.
+# System libraries required by OpenCV, PaddleOCR and Devanagari rendering.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       libgl1 \
       libglib2.0-0 \
       libgomp1 \
-      poppler-utils \
       fonts-lohit-deva \
       curl \
     && rm -rf /var/lib/apt/lists/*

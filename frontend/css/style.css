@@ -105,3 +105,12 @@ body {
 
 /* toast tweak */
 .toast-container { z-index: 1090; }
+
+/* ---------- Crop dialog ---------- */
+.crop-stage {
+  max-height: 60vh;
+  background: var(--bs-tertiary-bg);
+  border-radius: .5rem;
+  overflow: hidden;
+}
+.crop-stage .crop-image { display: block; max-width: 100%; }
