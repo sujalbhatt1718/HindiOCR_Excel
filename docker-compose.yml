@@ -1,0 +1,28 @@
+services:
+  hindiocrexcel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hindiocrexcel:latest
+    container_name: hindiocrexcel
+    ports:
+      - "8000:8000"
+    environment:
+      DEBUG: "false"
+      OCR_LANG: "hi"
+      OCR_USE_GPU: "false"
+      MAX_UPLOAD_SIZE_MB: "25"
+    volumes:
+      # Persist downloaded OCR models across restarts.
+      - ocr_models:/root/.paddleocr
+      - ./backend/logs:/app/backend/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  ocr_models:

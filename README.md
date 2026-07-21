@@ -1,3 +1,16 @@
+---
+title: HindiOCRExcel
+emoji: 📊
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_port: 8000
+pinned: false
+license: mit
+---
+
+<!-- The YAML block above configures the Hugging Face Space (Docker SDK). -->
+
 # HindiOCRExcel
 
 Convert images and PDF documents containing **tabular data** into editable,
@@ -12,20 +25,34 @@ Built with **FastAPI + PaddleOCR + OpenCV**. No Tesseract.
 
 - **Upload** JPG / JPEG / PNG / PDF (drag & drop, browse, preview, progress bar,
   size & type validation).
+- **Image crop** (Cropper.js) — crop, zoom, rotate and reset the uploaded image
+  before OCR; only the selected region is sent to the backend.
+- **Hindi → English numerals** — Devanagari digits (`०१२३…`) are converted to
+  ASCII (`0123…`) via a Unicode mapping before table reconstruction, display and
+  export, while Hindi words (e.g. `राम`) are preserved (`१२३`→`123`,
+  `विद्यालय नं. १२`→`विद्यालय नं. 12`).
 - **PaddleOCR** engine — auto-downloads models, auto CPU fallback, angle/
   orientation classification, confidence scores. Hindi + English + numerals.
 - **Preprocessing pipeline** (OpenCV): resize, grayscale, denoise, Gaussian &
   median blur, CLAHE, adaptive threshold, morphology, sharpening, border &
   shadow removal, perspective correction, deskew.
-- **Table detection** — detects horizontal/vertical lines, builds a cell grid
-  and OCRs each cell individually; falls back to geometric layout clustering for
-  line-less tables. Preserves blank cells and structure.
+- **Table detection & reconstruction** — full-page OCR is run **once** to get
+  every word with its bounding box; the table is then rebuilt from that
+  geometry. Clean bordered forms use detected ruled lines as cell boundaries;
+  faint/borderless tables (spreadsheet screenshots, scans) use whitespace-gap
+  clustering that keeps multi-word cells (e.g. `United Kingdom`) intact and
+  preserves row/column order and blank cells. Working from word boxes avoids
+  clipping edge glyphs, which the previous per-cell re-crop approach caused.
+- **Numeric accuracy** — the Devanagari recogniser often misreads Latin digits
+  (`99`→`११`). Numeric-looking cells are re-recognised with a Latin model and
+  the result kept only when it is confidently ASCII-numeric, so genuine
+  Devanagari numerals are never corrupted (toggle via `OCR_REFINE_NUMBERS`).
 - **Multi-page PDF** — every page rendered, processed and merged in order.
 - **Editable spreadsheet** — edit any cell, add/delete rows & columns, copy/
   paste (multi-cell), search, clear, undo/redo.
-- **Excel export** — Unicode-safe, numeric coercion (ASCII only, Hindi numerals
-  preserved), bold header, borders, wrapping, centre alignment, auto column
-  width, frozen first row.
+- **Excel export** — Unicode-safe, numeric coercion (Hindi numerals converted to
+  ASCII upstream so they store as real numbers), bold header, borders, wrapping,
+  centre alignment, auto column width, frozen first row.
 - **Production-ready** — typed, modular services, Pydantic models, Loguru
   logging, robust error handling, CORS, temp-file cleanup, Docker, tests.
 
@@ -36,8 +63,8 @@ Built with **FastAPI + PaddleOCR + OpenCV**. No Tesseract.
 | Backend   | Python 3.11, FastAPI, Uvicorn, Loguru, python-dotenv   |
 | OCR / CV  | PaddleOCR, OpenCV, NumPy, Pillow                        |
 | PDF       | PyMuPDF (fitz)                                          |
-| Excel     | Pandas, OpenPyXL                                        |
-| Frontend  | HTML5, CSS3, Bootstrap 5, Vanilla JS                    |
+| Excel     | OpenPyXL                                                |
+| Frontend  | HTML5, CSS3, Bootstrap 5, Vanilla JS, Cropper.js        |
 
 ---
 
@@ -53,12 +80,12 @@ HindiOCRExcel/
 │   │   ├── api/                 # upload, process, export, health, files
 │   │   ├── services/            # preprocessing, ocr, pdf, table, excel, document
 │   │   ├── models/schemas.py    # Pydantic request/response models
-│   │   └── utils/               # logger, helpers, exceptions
+│   │   └── utils/               # logger, helpers, exceptions, numeral_converter
 │   ├── uploads/  temp/  logs/   # runtime data (gitignored)
 ├── frontend/
 │   ├── index.html  workspace.html  about.html  404.html
 │   ├── css/style.css
-│   └── js/  (theme, api, upload, table, export, app)
+│   └── js/  (theme, api, upload, crop, table, export, app)
 ├── tests/                       # pytest suite
 ├── requirements.txt  requirements-dev.txt
 ├── Dockerfile  docker-compose.yml  docker-compose.dev.yml
@@ -74,7 +101,7 @@ Requires **Python 3.11+**. On Debian/Ubuntu install the OpenCV/PDF system libs:
 
 ```bash
 sudo apt-get update && sudo apt-get install -y \
-  libgl1 libglib2.0-0 libgomp1 poppler-utils fonts-lohit-deva
+  libgl1 libglib2.0-0 libgomp1 fonts-lohit-deva
 ```
 
 Then:
@@ -179,6 +206,8 @@ All settings are environment variables (see `.env.example`). Highlights:
 |-----------------------|---------|------------------------------------------|
 | `OCR_LANG`            | `hi`    | PaddleOCR recognition language           |
 | `OCR_USE_GPU`         | `false` | Use GPU if a CUDA paddle build is present |
+| `OCR_REFINE_NUMBERS`  | `true`  | Re-read numeric cells with a Latin model  |
+| `OCR_DIGIT_LANG`      | `en`    | Model used to re-read numeric cells       |
 | `MAX_UPLOAD_SIZE_MB`  | `25`    | Upload size limit                        |
 | `PDF_RENDER_DPI`      | `200`   | PDF-to-image render DPI                   |
 | `MAX_PDF_PAGES`       | `30`    | Max PDF pages processed                  |
@@ -210,11 +239,56 @@ The app is a standard ASGI application (`app.main:app`). Deploy on **Render**,
   ```bash
   uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
   ```
-- Put it behind Nginx/Caddy for TLS. Persist `~/.paddleocr` to avoid
-  re-downloading models on every deploy.
+- Put it behind Nginx/Caddy for TLS. Persist `backend/models` (the
+  `OCR_MODEL_DIR`) to avoid re-downloading models on every deploy.
 
-Render/Railway: set the start command to
+### Deploy to Render
+
+A `render.yaml` Blueprint is included (Docker web service — required because
+PaddleOCR/OpenCV need system libraries).
+
+1. Push this repo to GitHub (already done).
+2. In Render: **New → Blueprint**, pick this repo. Render reads `render.yaml`
+   and provisions a Docker web service with health check `/api/health`.
+3. First build takes a few minutes (installs system libs + Python deps). The
+   first `/process` request downloads the PaddleOCR models (~15 MB).
+
+Notes:
+- **Memory:** `paddlepaddle` is heavy — the free/starter (512 MB) instance can
+  OOM. The blueprint defaults to `plan: standard` (2 GB); lower it at your own
+  risk.
+- **Model cache:** the blueprint mounts a 1 GB disk at
+  `/app/backend/models` so models survive restarts. Disks require a paid
+  instance and pin the service to one instance — remove the `disk:` block if you
+  don't want that (models will simply re-download on cold start).
+- The container binds to Render's injected `$PORT` automatically.
+
+Prefer configuring manually instead of the Blueprint? Create a **Web Service**,
+choose **Docker**, leave the Dockerfile path as `./Dockerfile`, set health check
+path to `/api/health`, and add the env vars from `render.yaml`.
+
+Railway/other PaaS: use the Dockerfile, or set the start command to
 `cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+
+### Deploy to Hugging Face Spaces (free)
+
+The free **CPU Basic** Space has 16 GB RAM — enough for PaddleOCR. The YAML
+frontmatter at the top of this README (`sdk: docker`, `app_port: 8000`)
+configures the Space; it builds this repo's `Dockerfile` directly.
+
+1. Create a **Docker** Space at <https://huggingface.co/new-space> (SDK: Docker).
+2. Push this code to the Space's git remote:
+   ```bash
+   git remote add space https://huggingface.co/spaces/<user>/<space-name>
+   git push space HEAD:main
+   ```
+   (Authenticate with an HF access token that has **write** scope —
+   <https://huggingface.co/settings/tokens>.)
+3. The Space builds the image and boots. First `/process` downloads the OCR
+   models (~15 MB). The app is served at the Space URL.
+
+Storage on Spaces is ephemeral; models re-download after a rebuild/restart
+unless you attach persistent storage.
 
 ---
 
@@ -227,7 +301,7 @@ Render/Railway: set the start command to
 | `ocr_model_load_failed` | Network blocked model download — pre-download models or mount them. |
 | Hindi text renders as boxes in the UI | Install a Devanagari font (`fonts-lohit-deva`) / use a modern browser. |
 | Poor accuracy | Use a higher-resolution scan, ensure the table is upright and well-lit. |
-| PDF fails to render | Ensure `poppler-utils` is installed; confirm the PDF isn't encrypted. |
+| PDF fails to render | PDFs are rendered by PyMuPDF; confirm the file isn't encrypted or corrupted. |
 | Out-of-memory on large PDFs | Lower `PDF_RENDER_DPI` or `MAX_PDF_PAGES`. |
 
 ---

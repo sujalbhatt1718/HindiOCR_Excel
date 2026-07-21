@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About — HindiOCRExcel</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg sticky-top shadow-sm app-navbar">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="/"><i class="bi bi-table text-primary"></i> HindiOCR<span class="text-primary">Excel</span></a>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <a href="/" class="nav-link d-inline">Home</a>
+        <a href="/workspace" class="nav-link d-inline">Workspace</a>
+        <button id="themeToggle" class="btn btn-sm btn-outline-secondary" title="Toggle theme"><i class="bi bi-moon-stars"></i></button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container py-5" style="max-width:820px;">
+    <h1 class="h2 mb-3">About HindiOCRExcel</h1>
+    <p class="lead text-secondary">
+      An open, production-ready pipeline that converts scanned images and PDF
+      documents containing tabular data into editable, formatted Excel files —
+      with first-class support for Hindi, English and mixed-language content.
+    </p>
+
+    <h2 class="h5 mt-5">How it works</h2>
+    <ol class="text-secondary">
+      <li>Your image or PDF is validated and stored server-side.</li>
+      <li>PDF pages are rendered to images (PyMuPDF).</li>
+      <li>An OpenCV pipeline deskews, denoises and enhances each page.</li>
+      <li>Table lines are detected to build a grid of cells (with a layout-clustering fallback for line-less tables).</li>
+      <li>PaddleOCR reads each cell — Devanagari, Latin and numerals.</li>
+      <li>The table is reconstructed, merged across pages and returned as JSON.</li>
+      <li>You edit it in the browser and export a Unicode-safe .xlsx (OpenPyXL).</li>
+    </ol>
+
+    <h2 class="h5 mt-5">Technology</h2>
+    <div class="row g-3">
+      <div class="col-sm-6"><div class="card border-0 shadow-sm"><div class="card-body">
+        <h3 class="h6"><i class="bi bi-server text-primary"></i> Backend</h3>
+        <p class="text-secondary small mb-0">Python 3.11, FastAPI, Uvicorn, Loguru</p></div></div></div>
+      <div class="col-sm-6"><div class="card border-0 shadow-sm"><div class="card-body">
+        <h3 class="h6"><i class="bi bi-eye text-primary"></i> OCR &amp; CV</h3>
+        <p class="text-secondary small mb-0">PaddleOCR, OpenCV, NumPy, Pillow</p></div></div></div>
+      <div class="col-sm-6"><div class="card border-0 shadow-sm"><div class="card-body">
+        <h3 class="h6"><i class="bi bi-file-earmark-excel text-primary"></i> Data</h3>
+        <p class="text-secondary small mb-0">Pandas, OpenPyXL, PyMuPDF</p></div></div></div>
+      <div class="col-sm-6"><div class="card border-0 shadow-sm"><div class="card-body">
+        <h3 class="h6"><i class="bi bi-window text-primary"></i> Frontend</h3>
+        <p class="text-secondary small mb-0">HTML5, CSS3, Bootstrap 5, Vanilla JS</p></div></div></div>
+    </div>
+
+    <div class="text-center mt-5">
+      <a href="/workspace" class="btn btn-primary btn-lg"><i class="bi bi-magic"></i> Try it now</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/static/js/theme.js"></script>
+</body>
+</html>

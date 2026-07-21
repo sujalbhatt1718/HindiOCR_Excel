@@ -1,0 +1,17 @@
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.git/
+.gitignore
+.github/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+backend/uploads/*
+backend/temp/*
+backend/logs/*
+backend/models/
+*.md
+tests/
+.env

@@ -1,0 +1,22 @@
+# Development configuration.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Mounts source for live-reload and enables debug logging.
+services:
+  hindiocrexcel:
+    environment:
+      DEBUG: "true"
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+      - ocr_models:/root/.paddleocr
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --reload
+
+volumes:
+  ocr_models:
