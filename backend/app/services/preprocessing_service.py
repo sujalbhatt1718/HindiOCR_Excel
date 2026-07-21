@@ -219,21 +219,6 @@ class PreprocessingService:
         )
         return binary
 
-    def enhance_cell(self, cell: np.ndarray) -> np.ndarray:
-        """Enhance a small cropped cell image before per-cell OCR."""
-        if cell.size == 0:
-            return cell
-        gray = to_grayscale(cell)
-        gray = apply_clahe(gray)
-        gray = sharpen(gray)
-        # Upscale tiny cells so PaddleOCR sees enough pixels per glyph.
-        h, w = gray.shape[:2]
-        if max(h, w) < 60 and max(h, w) > 0:
-            scale = 60 / max(h, w)
-            gray = cv2.resize(gray, None, fx=scale, fy=scale,
-                              interpolation=cv2.INTER_CUBIC)
-        return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-
     def full_pipeline(self, image: np.ndarray) -> np.ndarray:
         """Run the complete documented pipeline, returning a binary image.
 

@@ -54,6 +54,12 @@ class Settings(BaseSettings):
     ocr_drop_score: float = 0.30
     # Directory PaddleOCR downloads models to; keeps them out of the home dir.
     ocr_model_dir: Path = BACKEND_DIR / "models"
+    # The Devanagari recogniser frequently misreads Latin digits (e.g. "99" as
+    # "११"). When enabled, numeric-looking regions are re-recognised with this
+    # Latin-optimised model and the result kept when it is confidently numeric.
+    ocr_refine_numbers: bool = True
+    ocr_digit_lang: str = "en"
+    ocr_digit_min_conf: float = 0.60
 
     # ---- PDF ----
     pdf_render_dpi: int = 200

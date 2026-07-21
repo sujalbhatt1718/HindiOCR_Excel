@@ -36,10 +36,17 @@ Built with **FastAPI + PaddleOCR + OpenCV**. No Tesseract.
 - **Preprocessing pipeline** (OpenCV): resize, grayscale, denoise, Gaussian &
   median blur, CLAHE, adaptive threshold, morphology, sharpening, border &
   shadow removal, perspective correction, deskew.
-- **Table detection** — detects horizontal/vertical lines (with morphological
-  bridging of broken/faint borders), builds a cell grid and OCRs each cell
-  individually; falls back to geometric layout clustering for line-less tables.
-  Preserves blank cells and structure.
+- **Table detection & reconstruction** — full-page OCR is run **once** to get
+  every word with its bounding box; the table is then rebuilt from that
+  geometry. Clean bordered forms use detected ruled lines as cell boundaries;
+  faint/borderless tables (spreadsheet screenshots, scans) use whitespace-gap
+  clustering that keeps multi-word cells (e.g. `United Kingdom`) intact and
+  preserves row/column order and blank cells. Working from word boxes avoids
+  clipping edge glyphs, which the previous per-cell re-crop approach caused.
+- **Numeric accuracy** — the Devanagari recogniser often misreads Latin digits
+  (`99`→`११`). Numeric-looking cells are re-recognised with a Latin model and
+  the result kept only when it is confidently ASCII-numeric, so genuine
+  Devanagari numerals are never corrupted (toggle via `OCR_REFINE_NUMBERS`).
 - **Multi-page PDF** — every page rendered, processed and merged in order.
 - **Editable spreadsheet** — edit any cell, add/delete rows & columns, copy/
   paste (multi-cell), search, clear, undo/redo.
@@ -199,6 +206,8 @@ All settings are environment variables (see `.env.example`). Highlights:
 |-----------------------|---------|------------------------------------------|
 | `OCR_LANG`            | `hi`    | PaddleOCR recognition language           |
 | `OCR_USE_GPU`         | `false` | Use GPU if a CUDA paddle build is present |
+| `OCR_REFINE_NUMBERS`  | `true`  | Re-read numeric cells with a Latin model  |
+| `OCR_DIGIT_LANG`      | `en`    | Model used to re-read numeric cells       |
 | `MAX_UPLOAD_SIZE_MB`  | `25`    | Upload size limit                        |
 | `PDF_RENDER_DPI`      | `200`   | PDF-to-image render DPI                   |
 | `MAX_PDF_PAGES`       | `30`    | Max PDF pages processed                  |

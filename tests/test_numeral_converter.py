@@ -6,6 +6,8 @@ from app.utils.numeral_converter import (
     convert_numerals,
     convert_row,
     convert_table,
+    has_devanagari_letter,
+    is_numeric_like,
 )
 
 
@@ -50,3 +52,34 @@ def test_convert_table_preserves_shape_and_words() -> None:
         ["1", "राम", "1500"],
         ["2", "John", "230"],
     ]
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("राम", True),           # Hindi word
+        ("विद्यालय १२", True),   # Hindi word with a Devanagari digit
+        ("१२३", False),          # only Devanagari digits, no letters
+        ("99", False),           # ASCII digits
+        ("Country", False),      # Latin word
+    ],
+)
+def test_has_devanagari_letter(text: str, expected: bool) -> None:
+    assert has_devanagari_letter(text) is expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("2453", True),
+        ("८९.५०", True),
+        ("₹१२५०", True),
+        ("10/02/2026", True),
+        ("राम", False),
+        ("Country", False),
+        ("", False),
+        ("o0hb", False),   # noisy OCR fragment, mostly letters
+    ],
+)
+def test_is_numeric_like(text: str, expected: bool) -> None:
+    assert is_numeric_like(text) is expected

@@ -44,3 +44,39 @@ def convert_row(row: Iterable[str]) -> list[str]:
 def convert_table(table: Iterable[Iterable[str]]) -> list[list[str]]:
     """Apply :func:`convert_numerals` to every cell of a row-major table."""
     return [convert_row(row) for row in table]
+
+
+# Characters that legitimately surround digits in numbers, currency, dates,
+# percentages and ranges. Used to decide whether a token is "numeric-like".
+_NUMERIC_PUNCT = set(" .,/:%-–—₹$€£+()#*")
+
+
+def has_devanagari_letter(text: str) -> bool:
+    """Return True if ``text`` contains a Devanagari *letter* (not a digit).
+
+    Devanagari digits (U+0966–U+096F) are excluded so that a purely numeric
+    string such as ``९९`` is *not* treated as Hindi text. This lets callers
+    tell real Hindi words (``राम``) apart from digits the OCR happened to
+    render in the Devanagari block.
+    """
+    for ch in text:
+        code = ord(ch)
+        if 0x0900 <= code <= 0x097F and ch not in _DEVANAGARI_DIGITS:
+            return True
+    return False
+
+
+def is_numeric_like(text: str) -> bool:
+    """Return True if ``text`` is dominated by digits (a number/currency/date).
+
+    Both ASCII and Devanagari digits count. Surrounding punctuation such as
+    ``.``, ``/``, ``₹`` or ``,`` is ignored, so ``₹१२५०``, ``89.50`` and
+    ``10/02/2026`` all qualify while words like ``राम`` or ``Country`` do not.
+    """
+    stripped = "".join(ch for ch in text if ch not in _NUMERIC_PUNCT)
+    if not stripped:
+        return False
+    digits = sum(
+        1 for ch in stripped if ch.isdigit() or ch in _DEVANAGARI_DIGITS
+    )
+    return digits >= max(1, int(0.6 * len(stripped)))

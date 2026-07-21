@@ -129,36 +129,38 @@ class OCRService:
                 )
         return words
 
-    def ocr_cell(
-        self, cell_image: np.ndarray, lang: str | None = None
+    def recognize_region(
+        self, image: np.ndarray, lang: str | None = None
     ) -> tuple[str, float]:
-        """Recognition-only OCR on a pre-cropped cell image.
+        """Recognise a small pre-cropped region and return (text, confidence).
 
-        Returns the concatenated text and mean confidence. Detection is still
-        used so multi-line cells are handled, but results are merged.
+        Detection is still applied so slightly padded crops are handled, and
+        all detected fragments are joined left-to-right. Failures degrade
+        gracefully to an empty result instead of raising.
         """
-        if cell_image is None or cell_image.size == 0:
+        if image is None or image.size == 0:
             return "", 0.0
         engine = self.get_engine(lang)
         try:
-            raw = engine.ocr(cell_image, cls=settings.ocr_use_angle_cls)  # type: ignore[attr-defined]
+            raw = engine.ocr(image, cls=settings.ocr_use_angle_cls)  # type: ignore[attr-defined]
         except Exception as exc:  # pragma: no cover - defensive
-            logger.warning("Cell OCR failed: {}", exc)
+            logger.warning("Region OCR failed: {}", exc)
             return "", 0.0
-
         if not raw or raw[0] is None:
             return "", 0.0
-        parts: list[str] = []
-        confs: list[float] = []
+        fragments: list[tuple[float, str, float]] = []
         for line in raw[0]:
-            _, (text, conf) = line
+            box, (text, conf) = line
             text = (text or "").strip()
             if text:
-                parts.append(text)
-                confs.append(float(conf))
-        if not parts:
+                x0 = min(p[0] for p in box)
+                fragments.append((x0, text, float(conf)))
+        if not fragments:
             return "", 0.0
-        return " ".join(parts), sum(confs) / len(confs)
+        fragments.sort(key=lambda f: f[0])
+        joined = " ".join(f[1] for f in fragments)
+        mean_conf = sum(f[2] for f in fragments) / len(fragments)
+        return joined, mean_conf
 
 
 # Module-level singleton reused across requests.
